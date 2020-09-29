@@ -3,17 +3,14 @@ package users
 import (
 	"fmt"
 	"github.com/dmazzella--/GoBasha_users-api/datasources/mysql/users_db"
-	"github.com/dmazzella--/GoBasha_users-api/utils/date_utils"
 	"github.com/dmazzella--/GoBasha_users-api/utils/errors"
 	"github.com/dmazzella--/GoBasha_users-api/utils/mysql_utils"
 )
 
 const (
-	indexUniqueEmail  = "unique_email"
-	noRowsInResultSet = "no rows in result set"
-	queryInsertUser   = "INSERT INTO users(first_name, last_name, email, date_created) VALUES (?,?,?,?)"
-	queryGetUser      = "SELECT id, first_name, last_name, email, date_created from users where id = ?"
-	queryUpdateUser   = "UPDATE users set first_name = ?, last_name = ?, email = ? where id = ?"
+	queryInsertUser   = "INSERT INTO users(first_name, last_name, email, status, date_created, password) VALUES (?,?,?,?,?,?)"
+	queryGetUser      = "SELECT id, first_name, last_name, email, date_created, status from users where id = ?"
+	queryUpdateUser   = "UPDATE users set first_name = ?, last_name = ?, email = ? , status = ? where id = ?"
 	queryDeleteUser   = "DELETE FROM users where id = ?"
 	queryFindByStatus = "SELECT id, first_name, last_name, email, date_created, status from users where status = ?"
 )
@@ -25,7 +22,7 @@ func (user *User) Get() *errors.RestErr {
 	}
 	defer stmt.Close()
 	result := stmt.QueryRow(user.Id)
-	if err := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
+	if err := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); err != nil {
 		return mysql_utils.ParseError(err)
 	}
 	// return nil no errors
@@ -38,8 +35,8 @@ func (user *User) Save() *errors.RestErr {
 		return errors.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
-	user.DateCreated = date_utils.GetNowString()
-	insertResult, saveErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
+
+	insertResult, saveErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.DateCreated, user.Password)
 	if saveErr != nil {
 		return mysql_utils.ParseError(saveErr)
 	}
@@ -59,7 +56,7 @@ func (user *User) Update() *errors.RestErr {
 		return errors.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(user.FirstName, user.LastName, user.Email, user.Id)
+	_, err = stmt.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.Id)
 	if err != nil {
 		return mysql_utils.ParseError(err)
 	}

@@ -2,6 +2,8 @@ package services
 
 import (
 	"github.com/dmazzella--/GoBasha_users-api/domain/users"
+	"github.com/dmazzella--/GoBasha_users-api/utils/crypto"
+	"github.com/dmazzella--/GoBasha_users-api/utils/date_utils"
 	"github.com/dmazzella--/GoBasha_users-api/utils/errors"
 )
 
@@ -9,6 +11,9 @@ func CreateUser(user users.User) (*users.User, *errors.RestErr) {
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}
+	user.DateCreated = date_utils.GetNowDBFormat()
+	user.Status = users.StatusCreated
+	user.Password = crypto.GetMd5(user.Password, user.Email)
 	if err := user.Save(); err != nil {
 		return nil, err
 	}
@@ -39,10 +44,14 @@ func UpdateUser(user users.User, isPatch bool) (*users.User, *errors.RestErr) {
 		if user.Email != "" {
 			current.Email = user.Email
 		}
+		if user.Status != "" {
+			current.Status = user.Status
+		}
 	} else {
 		current.FirstName = user.FirstName
 		current.LastName = user.LastName
 		current.Email = user.Email
+		current.Status = user.Status
 	}
 
 	if err := current.Update(); err != nil {
@@ -62,7 +71,7 @@ func DeleteUser(userId int64) *errors.RestErr {
 	return nil
 }
 
-func Search(status string) ([]users.User, *errors.RestErr) {
+func Search(status string) (users.Users, *errors.RestErr) {
 	dao := &users.User{}
 	return dao.FindByStatus(status)
 }
