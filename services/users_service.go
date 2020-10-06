@@ -7,7 +7,31 @@ import (
 	"github.com/dmazzella--/GoBasha_users-api/utils/errors"
 )
 
-func CreateUser(user users.User) (*users.User, *errors.RestErr) {
+var (
+	UsersService usersServiceInterface = &usersService{}
+)
+
+type usersService struct {
+}
+
+type usersServiceInterface interface {
+	GetUser(int64) (*users.User, *errors.RestErr)
+	CreateUser(users.User) (*users.User, *errors.RestErr)
+	UpdateUser(users.User, bool) (*users.User, *errors.RestErr)
+	DeleteUser(int64) *errors.RestErr
+	SearchUser(string) (users.Users, *errors.RestErr)
+}
+
+func (s *usersService) GetUser(userId int64) (*users.User, *errors.RestErr) {
+	result := &users.User{Id: userId}
+	if err := result.Get(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *usersService) CreateUser(user users.User) (*users.User, *errors.RestErr) {
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}
@@ -20,20 +44,9 @@ func CreateUser(user users.User) (*users.User, *errors.RestErr) {
 	return &user, nil
 }
 
-func GetUser(userId int64) (*users.User, *errors.RestErr) {
-	result := &users.User{Id: userId}
-	if err := result.Get(); err != nil {
-		return nil, err
-	}
+func (s *usersService) UpdateUser(user users.User, isPatch bool) (*users.User, *errors.RestErr) {
+	current := &users.User{Id: user.Id}
 
-	return result, nil
-}
-
-func UpdateUser(user users.User, isPatch bool) (*users.User, *errors.RestErr) {
-	current, err := GetUser(user.Id)
-	if err != nil {
-		return nil, err
-	}
 	if isPatch {
 		if user.FirstName != "" {
 			current.FirstName = user.FirstName
@@ -60,18 +73,16 @@ func UpdateUser(user users.User, isPatch bool) (*users.User, *errors.RestErr) {
 	return current, nil
 }
 
-func DeleteUser(userId int64) *errors.RestErr {
-	current, err := GetUser(userId)
-	if err != nil {
-		return err
-	}
+func (s *usersService) DeleteUser(userId int64) *errors.RestErr {
+	current := &users.User{Id: userId}
+
 	if err := current.Delete(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func Search(status string) (users.Users, *errors.RestErr) {
+func (s *usersService) SearchUser(status string) (users.Users, *errors.RestErr) {
 	dao := &users.User{}
 	return dao.FindByStatus(status)
 }
